@@ -47,6 +47,12 @@
 				case 'agregarPacienteaccion':
 					return $this->agregarPacienteaccion();
 					break;
+				case 'cargarVistaAereo':
+					return $this->cargarVistaAereo();
+					break;
+				case 'procesarAereo':
+					return $this->procesarAereo();
+					break;
 			}
 	    }
 		private function evaluarprolog($pares){
@@ -280,6 +286,88 @@
 			mysqli_query($this->conn,$sql);
 	    	$this->param['param_q'] ='';			
 			return $this->listaPacienteslike();			
-	    }			    
+	    }		
+		
+		
+
+		private function cargarVistaAereo(){
+			$html = "<h3>Predicción de Supervivencia</h3>";
+			$html .= "<div class='card p-4' style='background: #fff; max-width:600px; margin-top:20px;'>";
+			$html .= "<form id='formAereo'>";
+			$html .= "<div class='row'>";
+			$html .= "<div class='col-md-6 mb-3'><label>Género</label><select name='sex' class='form-control'><option value='male'>Male</option><option value='female'>Female</option></select></div>";
+			$html .= "<div class='col-md-6 mb-3'><label>Edad</label><input type='number' name='age' class='form-control' value='25' step='1'></div>";
+			$html .= "</div><div class='row'>";
+			$html .= "<div class='col-md-6 mb-3'><label>Clase</label><select name='class' class='form-control'><option value='First'>First</option><option value='Second'>Second</option><option value='Third'>Third</option></select></div>";
+			$html .= "<div class='col-md-6 mb-3'><label>Tarifa</label><input type='number' name='fare' class='form-control' value='30.0' step='0.1'></div>";
+			$html .= "</div><div class='row'>";
+			$html .= "<div class='col-md-12 mb-3'><label>Cubierta</label><select name='deck' class='form-control'>";
+			$html .= "<option value='unknown'>Unknown</option><option value='A'>A</option><option value='B'>B</option><option value='C'>C</option><option value='D'>D</option><option value='E'>E</option><option value='F'>F</option><option value='G'>G</option>";
+			$html .= "</select></div>";
+			$html .= "</div>";
+			$html .= "<button type='button' id='btnAereo' class='btn btn-primary btn-block' onclick='procesarTestAereo()'>Calcular Probabilidad</button>";
+			$html .= "</form></div><br>";
+			$html .= "<div id='resultadoAereo'></div>";
+			return $html;
+		}
+
+		private function procesarAereo(){
+			$idpaciente = $_SESSION['param_idpaciente'];
+			
+			// Captura directa y segura de las variables enviadas por el formulario
+			$sex = isset($_POST['sex']) ? $_POST['sex'] : 'male';
+			$age = isset($_POST['age']) ? floatval($_POST['age']) : 25.0;
+			$fare = isset($_POST['fare']) ? floatval($_POST['fare']) : 30.0;
+			$class = isset($_POST['class']) ? $_POST['class'] : 'Third';
+			$deck = isset($_POST['deck']) ? $_POST['deck'] : 'unknown';
+			
+			$data_array = array(
+				"sex" => $sex,
+				"age" => $age,
+				"fare" => $fare,
+				"class" => $class,
+				"deck" => $deck
+			);
+			
+			$payload = json_encode($data_array);
+			$url_flask = "http://127.0.0.1:5001/predict";
+			
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url_flask);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+			
+			$response = curl_exec($ch);
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+			
+			// Validamos que el servidor Python realmente esté respondiendo
+			if(!$response || $http_code != 200){
+				return "<div class='alert alert-danger'><b>Error de conexión:</b> Verifica que el servicio de Python (app.py) esté encendido y corriendo en el puerto 5001.</div>";
+			}
+			
+			$json_res = json_decode($response, true);
+			
+			if(isset($json_res['status']) && $json_res['status'] == 'error'){
+				return "<div class='alert alert-danger'><b>Error en el modelo:</b> " . $json_res['message'] . "</div>";
+			}
+			
+			$estado = $json_res['estado'];
+			$probabilidad_pct = round($json_res['probabilidad'] * 100, 2);
+			
+			$resultado_db = "Aereo: " . $estado . " (" . $probabilidad_pct . "%)";
+			$sql = "INSERT INTO atencion(idpaciente, fechahora, resultado) VALUES($idpaciente, (select current_timestamp()), '$resultado_db')";
+			mysqli_query($this->conn, $sql);
+			
+			$clase_alerta = ($estado == "SOBREVIVE") ? "alert-success" : "alert-danger";
+			$html = "<div class='alert $clase_alerta' style='max-width:600px;'>";
+			$html .= "<h4>Resultado: <b>$estado</b></h4><hr>";
+			$html .= "<p>Probabilidad de supervivencia: <b>" . $probabilidad_pct . "%</b></p>";
+			$html .= "</div>";
+			
+			return $html;
+		}
 	}
  ?>

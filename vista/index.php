@@ -58,23 +58,26 @@
 				}else{
 				?>
 				<li>
-				<a href="javascript:inicio()" >Inicio</a>
-	          </li>
-	          <li>
-				<a href="javascript:misdatospaciente(<?php echo $_SESSION['param_idpaciente'];?>)" >Mis Datos</a>
-			  </li>
-	          <li>
-              <a href="javascript:realizartest(<?php echo $_SESSION['param_idpaciente'];?>)" >Realizar Test</a>
-	          </li>
-	          <li>
-              <a href="javascript:misevaluaciones(<?php echo $_SESSION['param_idpaciente'];?>)" >Mis Evaluaciones</a>
-	          </li>
-	          <li>
-              <a href="javascript:misreportespaciente(<?php echo $_SESSION['param_idpaciente'];?>)" >Mis reportes</a>
-	          </li>
-	          <li>
-				<a href="javascript:salirpaciente()" >Salir</a>
-	          </li>				
+					<a href="javascript:inicio()" >Inicio</a>
+				</li>
+				<li>
+					<a href="javascript:misdatospaciente(<?php echo $_SESSION['param_idpaciente'];?>)" >Mis Datos</a>
+				</li>
+				<li>
+					<a href="javascript:realizartest(<?php echo $_SESSION['param_idpaciente'];?>)" >Realizar Test</a>
+				</li>
+				<li>
+					<a href="javascript:cargarVistaAereo(<?php echo $_SESSION['param_idpaciente'];?>)" >¿Sobrevive a accidente?</a>
+				</li>			  
+				<li>
+					<a href="javascript:misevaluaciones(<?php echo $_SESSION['param_idpaciente'];?>)" >Mis Evaluaciones</a>
+				</li>
+				<li>
+					<a href="javascript:misreportespaciente(<?php echo $_SESSION['param_idpaciente'];?>)" >Mis reportes</a>
+				</li>
+				<li>
+					<a href="javascript:salirpaciente()" >Salir</a>
+				</li>				
 				<?php
 				}
 				?>	          
@@ -592,6 +595,41 @@ function guardarMatriz(){
         }
     });
 }
+
+function cargarVistaAereo(idpaciente){
+    $.ajax({
+        data: {param_opcion: 'cargarVistaAereo'},
+        url: '../controlador/controlPaciente.php',
+        type: 'post',
+        beforeSend: function () {
+            $("#contenido").html("Cargando...");
+        },
+        success: function (response) {
+            $("#contenido").html(response);
+        }
+    });
+}
+
+function procesarTestAereo(){
+    var form = $("#formAereo").serialize();
+    form += "&param_opcion=procesarAereo";
+    $.ajax({
+        url: '../controlador/controlPaciente.php',
+        type: 'post',
+        data: form,
+        beforeSend: function () {
+            $("#resultadoAereo").html("<div class='alert alert-info'>Evaluando...</div>");
+            $("#btnAereo").prop('disabled', true);
+        },
+        success: function (response) {
+            $("#resultadoAereo").html(response);
+            $("#btnAereo").prop('disabled', false);
+        }
+    });
+}
+
+
+
 
   </script>
 <?php } ?>

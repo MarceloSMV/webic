@@ -31,7 +31,14 @@
 	{
 		$param['param_lista'] = $_POST['param_lista'];
 	}
-	
+	if(isset($_POST['sex'])) { $param['sex'] = $_POST['sex']; }
+	if(isset($_POST['age'])) { $param['age'] = $_POST['age']; }
+	if(isset($_POST['fare'])) { $param['fare'] = $_POST['fare']; }
+	if(isset($_POST['class'])) { $param['class'] = $_POST['class']; }
+	if(isset($_POST['deck'])) { $param['deck'] = $_POST['deck']; }
+
+
+
 	$param['param_opcion'] = $_POST['param_opcion'];
 	$Paciente = new Paciente_model();
 	echo $Paciente->gestionar($param);
